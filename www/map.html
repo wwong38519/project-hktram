@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" />
+<script src="//code.jquery.com/jquery-2.2.4.min.js"></script>
+<script src="//maps.google.com/maps/api/js"></script>
+<script>
+function getRequestParam(str) {
+	str = str || location.search;
+	str = str.substring(str.indexOf('?'))
+	var q = str.substring(1, str.length).split('&'), r = {};
+	for (var i = 0; i < q.length; i+=1) {
+		var s = q[i].split('=');
+		r[decodeURIComponent(s[0])] = decodeURIComponent(s[1]);
+	}
+	return r;
+}
+var stops;
+var map, infoWindow;
+var lang = {
+	en: {WB: 'West', EB: 'East', unit: ' min', arrived: 'arrived'},
+	tc: {WB: '西行', EB: '東行', unit: '分鐘', arrived: '到達'},
+	sc: {WB: '西行', EB: '東行', unit: '分鐘', arrived: '到達'},
+};
+var settings = {
+	stop: {idx: {code: 0, en: 1, tc: 2, sc: 3, lat: 4, lng: 5, direction: 6}},
+	info: {idx: {en: 'tram_dest_en', tc: 'tram_dest_tc', sc: 'tram_dest_tc'}}
+};
+var defaults = {
+	lat: 22.284760,	lng: 114.179284,
+	zoom: 14,
+	locale: 'tc'
+};
+var options = $.extend({}, defaults, getRequestParam());
+var getList = function(handler) {
+	$.ajax({
+		url: '/list',
+		type: 'GET',
+		dataType: 'json'
+	}).always(function(data) {
+		handler(data);
+	});
+};
+var getInfo = function(marker, handler) {
+	var deferreds = [], info = [];
+	for (var i = 0, codes = []; i < marker.stops.length; i++) {
+		var code = marker.stops[i][settings.stop.idx.code];
+		if (codes.indexOf(code) == -1) {
+			codes.push(code);
+			var deferred = $.ajax({
+				url: '/eta',
+				data: {'stop': code},
+				type: 'GET',
+				dataType: 'json'
+			}).success(function(data) {
+				info.push(data);
+			});
+			deferreds.push(deferred);
+		}
+	}
+	$.when.apply($, deferreds).done(function() {
+		handler(marker, info);
+	});
+};
+var preprocess = function(data) {
+	var arr = [];
+	var format = function(list, direction) {
+		for (var i = 0; i < list.length; i++) {
+			var lat = list[i][settings.stop.idx.lat];
+			var lng = list[i][settings.stop.idx.lng];
+			if (arr[lat] == undefined) arr[lat] = [];
+			if (arr[lat][lng] == undefined) arr[lat][lng] = [];
+			list[i].push(direction);
+			arr[lat][lng].push(list[i]);
+		}
+	};
+	format(data.EB, 'EB');
+	format(data.WB, 'WB');
+	return arr;
+};
+var init = function(data){
+	stops = preprocess(data);
+	map = new google.maps.Map(document.getElementById('map'), {
+		zoom: options.zoom,
+		center: new google.maps.LatLng(options.lat, options.lng),
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	});
+	infoWindow = new google.maps.InfoWindow();
+	for (var lat in stops) {
+		if (stops.hasOwnProperty(lat)) {
+			for (var lng in stops[lat]) {
+				if (stops[lat].hasOwnProperty(lng)) {
+					var latlng = new google.maps.LatLng(lat, lng);
+					var marker = new google.maps.Marker({
+ 						map: map,
+						stops: stops[lat][lng],
+						position: latlng,
+					});
+					google.maps.event.addListener(marker, 'click', function() {
+						getInfo(this, openInfoWindow);
+					});
+				}
+			}
+		}
+	}
+};
+var openInfoWindow = function(marker, data) {
+	infoWindow.setContent(formatContent(marker, data));
+	infoWindow.open(map, marker);
+};
+var formatContent = function(marker, data) {
+	var mapping = {};
+	for (var i = 0; i < marker.stops.length; i++) {
+		var code = marker.stops[i][settings.stop.idx.code];
+		var direction = marker.stops[i][settings.stop.idx.direction];
+		mapping[code] = direction;
+	}
+	var list = [];
+	for (var i = 0; i < data.length; i++) {
+		var metadata = data[i].root.metadata;
+		for (var j = 0; j < metadata.length; j++) {
+			var next = metadata[j].$;
+			var code = next.stop_code;
+			var dest = next[settings.info.idx[options.locale]];
+			var is_arrived = (next.is_arrived == "1");
+			var arrive_in = next.arrive_in_minute;
+			var direction = lang[options.locale][mapping[code]];
+			list.push({
+				dest: dest, 
+				direction: direction, 
+				is_arrived: is_arrived,
+				arrive_in: (is_arrived ? -1 : arrive_in)
+			});
+		}
+	}
+	list.sort(function(a, b) {	return a.arrive_in - b.arrive_in;	});
+	var name = marker.stops[0][settings.stop.idx[options.locale]];
+	return formatInfoWindow(name, list);
+};
+var formatInfoWindow = function(name, list) {
+	var $info = $("<div></div>");
+	var $eta = $('<div class="eta"><span class="dest"></span> <span class="arrive_in"></span><span class="unit"></span></div>');
+	$('<div class="title"></div>').text(name).appendTo($info);
+	for (var i = 0; i < list.length; i++) {
+		var $tmp = $eta.clone();
+		$tmp.children(".dest").text(list[i].dest + " (" + list[i].direction + ")");
+		if (list[i].is_arrived) {
+			$tmp.children(".arrive_in").text(lang[options.locale].arrived);
+		} else {
+			$tmp.children(".arrive_in").text(list[i].arrive_in);
+			$tmp.children('.unit').text(lang[options.locale].unit);
+		}
+		$info.append($tmp);
+	}
+	return $info.html();
+};
+$(document).ready(function(){
+	getList(init);
+});
+</script>
+<style>
+html,body{position:absolute;top:0px;left:0px;width:100%;height:100%;}
+</style>
+</head>
+<body>
+<div id="map" style="width:100%;height:100%;"></div>
+</body>
+</html>

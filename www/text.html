@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+<script src="//code.jquery.com/jquery-2.2.4.min.js"></script>
+<script>
+function getRequestParam(str) {
+	str = str || location.search;
+	str = str.substring(str.indexOf('?'))
+	var q = str.substring(1, str.length).split('&'), r = {};
+	for (var i = 0; i < q.length; i+=1) {
+		var s = q[i].split('=');
+		r[decodeURIComponent(s[0])] = decodeURIComponent(s[1]);
+	}
+	return r;
+}
+var stops;
+var lang = {
+	en: {WB: 'West', EB: 'East', unit: ' min', arrived: 'arrived'},
+	tc: {WB: '西行', EB: '東行', unit: '分鐘', arrived: '到達'},
+	sc: {WB: '西行', EB: '東行', unit: '分鐘', arrived: '到達'},
+};
+var settings = {
+	stop: {idx: {code: 0, en: 1, tc: 2, sc: 3, lat: 4, lng: 5}},
+	info: {idx: {en: 'tram_dest_en', tc: 'tram_dest_tc', sc: 'tram_dest_tc'}}
+};
+var defaults = {
+	locale: 'tc'
+};
+var options = $.extend({}, defaults, getRequestParam());
+var getList = function(handler) {
+	$.ajax({
+		url: '/list',
+		type: 'GET',
+		dataType: 'json'
+	}).always(function(data) {
+		handler(data);
+	});
+};
+var getInfo = function(marker, handler) {
+	$.ajax({
+		url: '/eta',
+		data: {'stop': marker.stop[settings.stop.idx.code]},
+		type: 'GET',
+		dataType: 'json'
+	}).success(function(data) {
+		handler(marker, data);
+	});
+};
+var init = function(data) {
+	stops = data;
+	var $parent = $("#list");
+	for (var i = 0, list = stops.WB, $block = $('#west'); i < list.length; i++) {
+		var name = list[i][settings.stop.idx[options.locale]];
+		$block.append($('<div class="stop" data-direction="WB" data-ordinal="'+i+'"></div>').text(name));
+	}
+	for (var i = 0, list = stops.EB, $block = $('#east'); i < list.length; i++) {
+		var name = list[i][settings.stop.idx[options.locale]];
+		$block.append($('<div class="stop" data-direction="EB" data-ordinal="'+i+'"></div>').text(name));
+	}
+	$(".stop").on('click', function() {
+		var direction = $(this).attr('data-direction');
+		var ordinal = $(this).attr('data-ordinal');
+		getInfo({'stop': stops[direction][ordinal], 'direction': direction}, showInfo);
+	});
+	$('#west>.title').text(lang[options.locale].WB);
+	$('#east>.title').text(lang[options.locale].EB);
+};
+var showInfo = function(marker, data) {
+	$("#msg").html(formatInfo(marker, data));
+};
+var formatInfo = function(marker, data) {
+	var name = marker.stop[settings.stop.idx[options.locale]];
+	var direction = lang[options.locale][marker.direction];
+	var metadata = data.root.metadata;
+	var $info = $("#template").clone();
+	var $eta = $info.children(".eta").clone();
+	$info.children(".eta").remove();
+	$info.children(".title").text(name+" ("+direction+")");
+	for (var i = 0; i < metadata.length; i++) {
+		var next = metadata[i].$;
+		var dest = next[settings.info.idx[options.locale]];
+		var is_arrived = (next.is_arrived == "1");
+		var arrive_in = next.arrive_in_minute;
+		var $tmp = $eta.clone();
+		$tmp.children(".dest").text(dest);
+		if (is_arrived) {
+			$tmp.children(".arrive_in").text(lang[options.locale].arrived);
+		} else {
+			$tmp.children(".arrive_in").text(arrive_in);
+			$tmp.children('.unit').text(lang[options.locale].unit);
+		}
+		$info.append($tmp);
+	}
+	return $info.html();
+};
+$(document).ready(function(){
+	getList(init);
+});
+</script>
+<style>
+#list>div{display:inline-block;vertical-align:top;}
+#msg{position:fixed;top:5px;right:5px;z-index:1;background:rgba(200,200,200,0.4);padding:5px;}
+</style>
+</head>
+<body>
+<div id="list">
+	<div id="west"><div class="title"></div></div>
+	<div id="east"><div class="title"></div></div>
+</div>
+<div id="msg"></div>
+<div id="template" style="display:none;">
+	<div class="title"></div>
+	<div class="eta">
+		<span class="dest"></span>
+		<span class="arrive_in"></span><span class="unit"></span>
+	</div>
+</div>
+</body>
+</html>

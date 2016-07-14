@@ -1,0 +1,12 @@
+{
+  "name": "project-hktram",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-static": "^0.7.7",
+    "q": "^1.4.1",
+    "xml2js": "^0.4.17"
+  }
+}
