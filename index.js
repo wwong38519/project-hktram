@@ -1,13 +1,13 @@
 var http = require('http');
 var url = require('url');
+var fs = require('fs');
 var Q = require('q');
 var xml2js = require('xml2js');
-var static = require('node-static');
+var mustache = require('mustache');
 
 var port = process.env.PORT || 1337;
+var apiKey = process.env.GOOGLE_API_KEY || 'GOOGLE_API_KEY';
 var webroot = __dirname+'/www';
-
-var file = new static.Server(webroot);
 
 var server = http.createServer(function(request, response){
 	try {
@@ -25,9 +25,7 @@ var route = function(request, response) {
 	var params = req.query;
 	var path = req.pathname;
 	if (path == '/eta') {
-		if (params.stop == undefined) {
-			return reply(response, '');
-		}
+		if (params.stop == undefined) return replyjson(response, '');
 		var optionsEta = {
 			host: 'www.hktramways.com',
 			path: '/nextTram/geteat.php?stop_code='+params.stop
@@ -39,7 +37,7 @@ var route = function(request, response) {
 		};
 		var promiseMsg = httpcall(optionsMsg, handleStopInfo);
 		Q.spread([promiseEta, promiseMsg], function(dataEta, dataMsg) {
-			reply(response, merge(dataEta, dataMsg));
+			replyjson(response, merge(dataEta, dataMsg));
 		});
 	} else
 	if (path == '/list') {
@@ -49,12 +47,15 @@ var route = function(request, response) {
 		};
 		var promise = httpcall(options, handleStopList);
 		Q.when(promise, function(data) {
-			reply(response, data);
+			replyjson(response, data);
 		});
 	} else {
-		request.addListener('end', function() {
-			file.serve(request, response);
-		}).resume();	
+		fs.readFile(webroot+path, function(err, data) {
+			if (err) return replyhtml(response, '');
+			var json = {GOOGLE_API_KEY: apiKey};
+			var page = mustache.render(data.toString(), json);
+			replyhtml(response, page);
+		});
 	}
 };
 
@@ -87,9 +88,14 @@ var handleStopList = function(q, data) {
 	q.resolve(result);
 };
 
-var reply = function(response, data) {
+var replyjson = function(response, data) {
 	response.writeHead(200, {'Content-Type': 'application/json'});
 	response.end(JSON.stringify(data));
+};
+
+var replyhtml = function(response, data) {
+	response.writeHead(200, {'Content-Type': 'text/html'});
+	response.end(data);
 };
 
 var merge = function() {
