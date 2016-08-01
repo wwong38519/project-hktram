@@ -23,7 +23,8 @@ var lang = {
 };
 var settings = {
 	stop: {idx: {code: 0, en: 1, tc: 2, sc: 3, lat: 4, lng: 5}},
-	info: {idx: {en: 'tram_dest_en', tc: 'tram_dest_tc', sc: 'tram_dest_tc'}}
+	info: {idx: {en: 'tram_dest_en', tc: 'tram_dest_tc', sc: 'tram_dest_tc'}},
+	msg: {idx: {en: 'msg_en', tc: 'msg_tc', sc: 'msg_tc'}}
 };
 var defaults = {
 	locale: 'tc'
@@ -83,13 +84,18 @@ var formatInfo = function(marker, data) {
 		var dest = next[settings.info.idx[options.locale]];
 		var is_arrived = (next.is_arrived == "1");
 		var arrive_in = next.arrive_in_minute;
+		var msg = next[settings.msg.idx[options.locale]];
 		var $tmp = $eta.clone();
-		$tmp.children(".dest").text(dest);
-		if (is_arrived) {
-			$tmp.children(".arrive_in").text(lang[options.locale].arrived);
+		if (msg) {
+			$tmp.children(".dest").text(msg);
 		} else {
-			$tmp.children(".arrive_in").text(arrive_in);
-			$tmp.children('.unit').text(lang[options.locale].unit);
+			$tmp.children(".dest").text(dest);
+			if (is_arrived) {
+				$tmp.children(".arrive_in").text(lang[options.locale].arrived);
+			} else {
+				$tmp.children(".arrive_in").text(arrive_in);
+				$tmp.children('.unit').text(lang[options.locale].unit);
+			}
 		}
 		$info.append($tmp);
 	}
@@ -101,7 +107,7 @@ $(document).ready(function(){
 </script>
 <style>
 #list>div{display:inline-block;vertical-align:top;}
-#msg{position:fixed;top:5px;right:5px;z-index:1;background:rgba(200,200,200,0.4);padding:5px;}
+#msg{position:fixed;top:5px;right:5px;z-index:1;}
 </style>
 </head>
 <body>

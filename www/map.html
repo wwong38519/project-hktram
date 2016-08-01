@@ -25,7 +25,8 @@ var lang = {
 };
 var settings = {
 	stop: {idx: {code: 0, en: 1, tc: 2, sc: 3, lat: 4, lng: 5, direction: 6}},
-	info: {idx: {en: 'tram_dest_en', tc: 'tram_dest_tc', sc: 'tram_dest_tc'}}
+	info: {idx: {en: 'tram_dest_en', tc: 'tram_dest_tc', sc: 'tram_dest_tc'}},
+	msg: {idx: {en: 'msg_en', tc: 'msg_tc', sc: 'msg_tc'}}
 };
 var defaults = {
 	lat: 22.284760,	lng: 114.179284,
@@ -125,12 +126,14 @@ var formatContent = function(marker, data) {
 			var dest = next[settings.info.idx[options.locale]];
 			var is_arrived = (next.is_arrived == "1");
 			var arrive_in = next.arrive_in_minute;
+			var msg = next[settings.msg.idx[options.locale]];
 			var direction = lang[options.locale][mapping[code]];
 			list.push({
 				dest: dest, 
 				direction: direction, 
 				is_arrived: is_arrived,
-				arrive_in: (is_arrived ? -1 : arrive_in)
+				arrive_in: (is_arrived ? -1 : arrive_in),
+				msg: msg
 			});
 		}
 	}
@@ -144,12 +147,16 @@ var formatInfoWindow = function(name, list) {
 	$('<div class="title"></div>').text(name).appendTo($info);
 	for (var i = 0; i < list.length; i++) {
 		var $tmp = $eta.clone();
-		$tmp.children(".dest").text(list[i].dest + " (" + list[i].direction + ")");
-		if (list[i].is_arrived) {
-			$tmp.children(".arrive_in").text(lang[options.locale].arrived);
+		if (list[i].msg) {
+			$tmp.children(".dest").text(list[i].msg);
 		} else {
-			$tmp.children(".arrive_in").text(list[i].arrive_in);
-			$tmp.children('.unit').text(lang[options.locale].unit);
+			$tmp.children(".dest").text(list[i].dest + " (" + list[i].direction + ")");
+			if (list[i].is_arrived) {
+				$tmp.children(".arrive_in").text(lang[options.locale].arrived);
+			} else {
+				$tmp.children(".arrive_in").text(list[i].arrive_in);
+				$tmp.children('.unit').text(lang[options.locale].unit);
+			}
 		}
 		$info.append($tmp);
 	}
