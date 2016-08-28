@@ -7,7 +7,7 @@ var mustache = require('mustache');
 
 var port = process.env.PORT || 1337;
 var apiKey = process.env.GOOGLE_API_KEY || 'GOOGLE_API_KEY';
-var webroot = __dirname+'/www';
+var webroot = __dirname+'/src';
 
 var server = http.createServer(function(request, response){
 	try {
@@ -94,7 +94,7 @@ var replyjson = function(response, data) {
 };
 
 var replyhtml = function(response, data) {
-	response.writeHead(200, {'Content-Type': 'text/html'});
+	response.writeHead(200);
 	response.end(data);
 };
 
