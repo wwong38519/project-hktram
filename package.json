@@ -6,7 +6,7 @@
     "build": "./node_modules/.bin/gulp",
     "start": "node index.js",
     "dev": "NODE_ENV=development ./node_modules/.bin/gulp watch & node index.js",
-    "heroku-postbuild": "NODE_ENV=production ./node_modules/.bin/gulp build"
+    "heroku-postbuild": "NODE_ENV=production ./node_modules/.bin/gulp"
   },
   "dependencies": {
     "babel-preset-es2015": "^6.14.0",

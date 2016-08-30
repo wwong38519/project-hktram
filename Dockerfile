@@ -10,4 +10,4 @@ COPY . /usr/src/app/
 
 EXPOSE 1337
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]
