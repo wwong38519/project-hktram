@@ -24,8 +24,8 @@ class StopInfo extends React.Component {
 				<div>{this.props.name} ({this.context.lang[this.props.direction]})</div>
 				{list.map((value, idx) =>
 					<div key={idx} className="row">
-					<div className="col-xs-8">{value.$[this.context.idx.msg] === undefined ? value.$[this.context.idx.info] : value.$[this.context.idx.msg]}</div>
-					<div className="col-xs-4">{value.$.is_arrived == 1 ? this.context.lang.arrived : value.$.arrive_in_minute + this.context.lang.unit}</div>
+					<div className="col-xs-6">{value.$[this.context.idx.msg] === undefined ? value.$[this.context.idx.info] : value.$[this.context.idx.msg]}</div>
+					<div className="col-xs-6">{value.$.is_arrived == 1 ? this.context.lang.arrived : value.$.arrive_in_minute + this.context.lang.unit}</div>
 					</div>
 				)}
 				</div>
