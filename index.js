@@ -1,3 +1,5 @@
+/* global __dirname, stopsArrayEB, stopsArrayWB */
+/*eslint no-unused-vars: ["error", { "varsIgnorePattern": "window|google" }]*/
 var http = require('http');
 var url = require('url');
 var fs = require('fs');
@@ -7,7 +9,7 @@ var mustache = require('mustache');
 
 var port = process.env.PORT || 1337;
 var apiKey = process.env.GOOGLE_API_KEY || 'GOOGLE_API_KEY';
-var webroot = __dirname+'/src';
+var webroot = __dirname+'/dist';
 
 var server = http.createServer(function(request, response){
 	try {
@@ -105,7 +107,7 @@ var merge = function() {
 		for ( prop in source ) {
 			if ( prop in destination && Array.isArray( destination[ prop ] ) ) {
 				destination[ prop ] = destination[ prop ].concat( source[ prop ] );
-			} else if ( prop in destination && typeof destination[ prop ] === "object" ) {
+			} else if ( prop in destination && typeof destination[ prop ] === 'object' ) {
 				destination[ prop ] = merge( destination[ prop ], source[ prop ] );
 			} else {
 				destination[ prop ] = source[ prop ];
