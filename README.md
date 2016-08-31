@@ -9,7 +9,7 @@
 * Two single web pages making use of the backend to demostrate the API call results in the form of plain text or via Google Map.
 
 (2016-08-30 Update)
-* Add a new text version with ReactJS using ES5
+* Add a new text version with ReactJS using ES6
 * Add gulp, babel and browserify for build process
 * Add eslint for checking
 * Add Dockerfile for development environment
@@ -123,7 +123,10 @@ var config = {
 
 #### Development 
 
-##### Docker 
+##### Docker
+
+* The Docker image is based on [Run Node 6.x on Raspberry Pi (Raspbian)](https://gist.github.com/wwong38519/00ab2397abbbe3336486e34c8e644381#file-dockerfile)
+
 * Build Docker Image
 ```
 docker build -t project-hktram .
